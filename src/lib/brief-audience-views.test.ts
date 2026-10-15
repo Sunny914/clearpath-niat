@@ -92,6 +92,29 @@ describe("buildCounsellorBriefView", () => {
     assert.equal(maskPhoneNumber("9876543210"), "•••• •••3210");
     assert.equal(maskPhoneNumber(""), null);
   });
+
+  it("includes n8n follow-up draft only in counsellor view", () => {
+    const withN8n = buildCounsellorBriefView({
+      ...ctx,
+      n8nFollowUp: {
+        status: "prepared_for_review",
+        concernCategory: "Fees",
+        recommendedNextAction: "n8n action",
+        recommendedNextActionRationale: "n8n rationale",
+        followUpDraft: "UNIQUE_N8N_DRAFT_SNIPPET",
+        suggestedHandling: "Human review",
+        messageSent: false,
+        counsellingBooked: false,
+      },
+    });
+    assert.match(withN8n.n8nFollowUp?.followUpDraft ?? "", /UNIQUE_N8N_DRAFT/);
+
+    const student = buildStudentBriefView({
+      ...ctx,
+      n8nFollowUp: withN8n.n8nFollowUp,
+    });
+    assert.equal(JSON.stringify(student).includes("UNIQUE_N8N_DRAFT"), false);
+  });
 });
 
 describe("resolveAudienceTab", () => {

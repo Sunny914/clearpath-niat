@@ -189,6 +189,7 @@ export function LeadIntakeForm({
           persistence: payload.persistence,
           lead: { ...form },
           brief: payload.brief,
+          n8nFollowUp: payload.n8nFollowUp ?? null,
         },
       });
     } catch (err) {

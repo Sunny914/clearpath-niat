@@ -1,3 +1,4 @@
+import type { N8nPreparedForReview } from "@/lib/n8n/parse-n8n-prepared-response";
 import { isCounsellingCallNextStep, needsClass12Stream } from "@/lib/validate-lead-intake";
 import type { BriefPersistenceStatus } from "@/types/brief-api";
 import type {
@@ -24,6 +25,7 @@ export type BriefSessionContext = {
   persistence: BriefPersistenceStatus;
   lead: LeadIntakeFormData;
   brief: DecisionBriefResult;
+  n8nFollowUp?: N8nPreparedForReview | null;
 };
 
 export type StudentBriefView = {
@@ -50,6 +52,7 @@ export type CounsellorBriefView = {
   contactPermissionStatus: string;
   /** Masked digits only — never full number in UI */
   phoneOnFileMasked: string | null;
+  n8nFollowUp: N8nPreparedForReview | null;
 };
 
 export function maskPhoneNumber(phone: string): string | null {
@@ -183,6 +186,7 @@ export function buildCounsellorBriefView(
     followUpPreference: lead.preferredNextStep,
     contactPermissionStatus: buildContactPermissionStatus(lead),
     phoneOnFileMasked,
+    n8nFollowUp: ctx.n8nFollowUp ?? null,
   };
 }
 

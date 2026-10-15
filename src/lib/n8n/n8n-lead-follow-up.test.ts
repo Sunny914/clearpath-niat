@@ -137,10 +137,28 @@ describe("notifyN8nLeadPersisted", () => {
       fetchImpl: async (_url, init) => {
         capturedHeaders = init?.headers;
         capturedBody = String(init?.body ?? "");
-        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            status: "prepared_for_review",
+            concernCategory: "Fees",
+            recommendedNextAction: "Review official fee materials.",
+            recommendedNextActionRationale: "Synthetic test.",
+            suggestedHandling: "Information follow-up for human review",
+            followUpDraft: "Draft text for counsellor review.",
+            messageSent: false,
+            counsellingBooked: false,
+          }),
+          { status: 200 },
+        );
       },
     });
     assert.equal(result.outcome, "success");
+    assert.equal(result.preparedForReview?.status, "prepared_for_review");
+    assert.match(
+      result.preparedForReview?.followUpDraft ?? "",
+      /Draft text/,
+    );
     const headers = capturedHeaders as Record<string, string>;
     assert.equal(headers[N8N_WEBHOOK_SECRET_HEADER], "test-secret-for-unit-test");
     assert.equal(capturedBody.includes("9876543210"), false);

@@ -60,6 +60,41 @@ export function CounsellorBriefView({ view }: CounsellorBriefViewProps) {
         </p>
       </BriefViewSection>
 
+      {view.n8nFollowUp ? (
+        <BriefViewSection
+          title="Workflow follow-up draft (n8n)"
+          id="counsellor-n8n-follow-up"
+        >
+          <p>
+            <span className="font-medium text-navy">Workflow status: </span>
+            Prepared for review
+          </p>
+          <p className="mt-2">
+            <span className="font-medium text-navy">Concern category: </span>
+            {view.n8nFollowUp.concernCategory}
+          </p>
+          <p className="mt-2">
+            <span className="font-medium text-navy">Suggested handling: </span>
+            {view.n8nFollowUp.suggestedHandling}
+          </p>
+          <p className="mt-2">
+            <span className="font-medium text-navy">n8n recommendation: </span>
+            {view.n8nFollowUp.recommendedNextAction}
+          </p>
+          <p className="mt-2">
+            <span className="font-medium text-navy">n8n rationale: </span>
+            {view.n8nFollowUp.recommendedNextActionRationale}
+          </p>
+          <p className="mt-3 whitespace-pre-wrap rounded-lg border border-border bg-surface px-3 py-3 text-sm text-navy">
+            {view.n8nFollowUp.followUpDraft}
+          </p>
+          <p className="mt-2 text-xs text-navy-muted">
+            Draft for counsellor review only. No message was sent and no counselling
+            call was booked by the workflow.
+          </p>
+        </BriefViewSection>
+      ) : null}
+
       <BriefViewSection
         title="Follow-up preference and contact permission"
         id="counsellor-contact"

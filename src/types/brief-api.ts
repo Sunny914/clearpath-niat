@@ -1,3 +1,4 @@
+import type { N8nPreparedForReview } from "@/lib/n8n/parse-n8n-prepared-response";
 import type { DecisionBriefResult } from "@/types/lead";
 
 export type BriefPersistenceStatus =
@@ -13,6 +14,8 @@ export type BriefApiSuccessResponse = {
   leadReferenceId: string;
   requestId: string;
   brief: DecisionBriefResult;
+  /** Present when n8n returned `prepared_for_review` for this save (counsellor UI only). */
+  n8nFollowUp?: N8nPreparedForReview | null;
 };
 
 export const BRIEF_PERSISTENCE_HEADER = "X-ClearPath-Persistence";

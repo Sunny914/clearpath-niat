@@ -1,5 +1,9 @@
 import { buildN8nLeadPersistedEvent } from "@/lib/n8n/build-lead-persisted-event";
 import { logN8nFollowUpOutcome } from "@/lib/n8n/n8n-follow-up-log";
+import {
+  parseN8nPreparedForReview,
+  type N8nPreparedForReview,
+} from "@/lib/n8n/parse-n8n-prepared-response";
 import type { BriefPersistenceStatus } from "@/types/brief-api";
 import type { N8nNotifyOutcome } from "@/types/n8n-lead-event";
 import { shouldTriggerN8nFollowUp } from "@/types/n8n-lead-event";
@@ -28,6 +32,7 @@ export type NotifyN8nLeadPersistedInput = {
 
 export type NotifyN8nLeadPersistedResult = {
   outcome: N8nNotifyOutcome;
+  preparedForReview?: N8nPreparedForReview | null;
 };
 
 function resolveTimeoutMs(): number {
@@ -84,11 +89,19 @@ export async function notifyN8nLeadPersisted(
         "http_error",
         `status=${response.status}`,
       );
-      return { outcome: "http_error" };
+      return { outcome: "http_error", preparedForReview: null };
+    }
+
+    let preparedForReview: N8nPreparedForReview | null = null;
+    try {
+      const body: unknown = await response.json();
+      preparedForReview = parseN8nPreparedForReview(body);
+    } catch {
+      preparedForReview = null;
     }
 
     logN8nFollowUpOutcome(requestId, leadId, "success");
-    return { outcome: "success" };
+    return { outcome: "success", preparedForReview };
   } catch (error) {
     const outcome: N8nNotifyOutcome =
       error instanceof Error && error.name === "AbortError"

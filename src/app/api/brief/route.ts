@@ -200,9 +200,10 @@ export async function POST(request: Request) {
       );
     }
 
+    let n8nFollowUp: BriefApiSuccessResponse["n8nFollowUp"] = null;
     if (persistResult.status === "saved") {
       timing.markStart("n8n_follow_up");
-      await notifyN8nLeadPersisted({
+      const n8nResult = await notifyN8nLeadPersisted({
         persistence: persistResult.status,
         requestId,
         leadId: persistResult.leadId,
@@ -210,6 +211,7 @@ export async function POST(request: Request) {
         brief: result,
       });
       timing.markEnd("n8n_follow_up");
+      n8nFollowUp = n8nResult.preparedForReview ?? null;
     }
 
     logBriefSuccess(requestId, source, timing.phasesMs.total_api ?? 0);
@@ -220,6 +222,7 @@ export async function POST(request: Request) {
         leadReferenceId: persistResult.leadId,
         requestId,
         brief: result,
+        n8nFollowUp,
       },
       source,
     );

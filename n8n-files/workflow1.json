@@ -1,0 +1,156 @@
+
+{
+    "name": "ClearPath NIAT - Lead Follow-up",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "clearpath-lead",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "clearpath-webhook-001",
+        "name": "ClearPath Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          240,
+          300
+        ],
+        "webhookId": "clearpath-lead-webhook"
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $json.body ?? $json;\nconst isObject = input !== null && typeof input === 'object' && !Array.isArray(input);\nconst brief = isObject && input.brief && typeof input.brief === 'object' ? input.brief : {};\nconst errors = [];\nif (!isObject) errors.push('Request body must be a JSON object.');\nif (input.eventType !== 'lead_persisted') errors.push('Unsupported event type.');\nif (input.persistence !== 'saved') errors.push('Only newly saved leads are accepted.');\nif (typeof input.leadId !== 'string' || !/^[0-9a-f-]{36}$/i.test(input.leadId)) errors.push('A valid leadId is required.');\nif (typeof input.requestId !== 'string' || !/^[0-9a-f-]{36}$/i.test(input.requestId)) errors.push('A valid requestId is required.');\nif (typeof brief.statedConcernCategory !== 'string' || !brief.statedConcernCategory.trim()) errors.push('brief.statedConcernCategory is required.');\nif (typeof brief.recommendedNextAction !== 'string' || !brief.recommendedNextAction.trim()) errors.push('brief.recommendedNextAction is required.');\nif (typeof brief.recommendedNextActionRationale !== 'string' || !brief.recommendedNextActionRationale.trim()) errors.push('brief.recommendedNextActionRationale is required.');\nif (typeof input.preferredNextStep !== 'string') errors.push('preferredNextStep is required.');\nif (typeof input.counsellingContactConsent !== 'boolean') errors.push('counsellingContactConsent must be a boolean.');\nif (errors.length) {\n  return [{ json: { valid: false, httpStatus: 400, response: { ok: false, status: 'rejected', errors } } }];\n}\nconst nextStep = input.preferredNextStep;\nconst consent = input.counsellingContactConsent === true;\nlet channel = 'Information follow-up for human review';\nif (nextStep === 'Request a counselling call' && consent) channel = 'Counselling team review; contact only through an approved, consented process';\nif (nextStep === 'Request a counselling call' && !consent) channel = 'Do not initiate counselling contact; request needs consent review';\nconst draft = `Suggested next action: ${brief.recommendedNextAction}\\n\\nReason: ${brief.recommendedNextActionRationale}\\n\\nConcern category: ${brief.statedConcernCategory}\\n\\nRequested next step: ${nextStep}\\n\\nReview the approved facts and the student's preferences before any contact.`;\nreturn [{ json: {\n  valid: true,\n  httpStatus: 200,\n  response: {\n    ok: true,\n    status: 'prepared_for_review',\n    leadReferenceId: input.leadId,\n    requestId: input.requestId,\n    concernCategory: brief.statedConcernCategory,\n    recommendedNextAction: brief.recommendedNextAction,\n    recommendedNextActionRationale: brief.recommendedNextActionRationale,\n    suggestedHandling: channel,\n    counsellingContactConsent: consent,\n    followUpDraft: draft,\n    messageSent: false,\n    counsellingBooked: false\n  }\n} }];"
+        },
+        "id": "clearpath-validate-002",
+        "name": "Validate & Prepare Draft",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          480,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "clearpath-valid-condition",
+                "leftValue": "={{ $json.valid }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "clearpath-if-003",
+        "name": "Valid Event?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          720,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ $json.response }}",
+          "options": {
+            "responseCode": "={{ $json.httpStatus }}"
+          }
+        },
+        "id": "clearpath-success-004",
+        "name": "Respond with Recommendation",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          980,
+          200
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ $json.response }}",
+          "options": {
+            "responseCode": "={{ $json.httpStatus }}"
+          }
+        },
+        "id": "clearpath-reject-005",
+        "name": "Respond with Validation Error",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          980,
+          420
+        ]
+      }
+    ],
+    "connections": {
+      "ClearPath Webhook": {
+        "main": [
+          [
+            {
+              "node": "Validate & Prepare Draft",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Validate & Prepare Draft": {
+        "main": [
+          [
+            {
+              "node": "Valid Event?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Valid Event?": {
+        "main": [
+          [
+            {
+              "node": "Respond with Recommendation",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Respond with Validation Error",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "versionId": "clearpath-niat-initial",
+    "meta": {
+      "templateCredsSetupCompleted": true
+    },
+    "tags": []
+  }
+  
